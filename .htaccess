@@ -1,53 +1,14 @@
-RewriteEngine On
-RewriteBase /
+DirectoryIndex index.php
 
-# --- Default route ---
-# Khi vào domain gốc (/) thì chuyển 301 đến /trang-chu
-RewriteRule ^$ trang-chu [L,R=301]
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
 
-# Map /trang-chu -> file thật
-# Nếu file nằm ở ROOT: /trang-chu.php
-RewriteRule ^trang-chu$ Route/trang-chu.php [L]
-RewriteRule ^gioi-thieu$ Route/gioi-thieu.php [L]
-RewriteRule ^dieu-khoan-su-dung$ Route/dieukhoansudung.php [L]
-# Nếu file nằm ở /Route/trang-chu.php thì dùng dòng dưới và bỏ dòng trên:
-# RewriteRule ^trang-chu$ Route/trang-chu.php [L]
+  # Serve existing files and directories directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
 
-# --- Bỏ đuôi .php ---
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^(.+)$ $1.php [L]
-
-# --- Chặn truy cập file nhạy cảm (Apache 2.4) ---
-<FilesMatch "\.(env|git|htaccess|log|bak|sql|zip|tar|gz)$">
-  Require all denied
-</FilesMatch>
-
-# --- MIME cơ bản ---
-AddType application/octet-stream .ipa .apk .rar .jar
-
-# --- Cache tĩnh ---
-<IfModule mod_headers.c>
-  <FilesMatch "\.(jpg|jpeg|png|gif|svg|css|js)$">
-    Header set Cache-Control "max-age=31536000, public"
-  </FilesMatch>
+  # Otherwise route everything to index.php
+  RewriteRule ^ index.php [QSA,L]
 </IfModule>
-
-# --- Nén ---
-<IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE application/javascript application/json text/css text/html text/plain
-</IfModule>
-
-# --- Security headers ---
-<IfModule mod_headers.c>
-  Header always set X-Content-Type-Options "nosniff"
-  Header always set X-XSS-Protection "1; mode=block"
-  Header always set X-Frame-Options "DENY"
-  # Chỉ bật HSTS khi site chạy HTTPS:
-  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" "expr=%{HTTPS} == 'on'"
-</IfModule>
-
-# (Tuỳ chọn) Redirect URL có .php về URL sạch
-RewriteCond %{THE_REQUEST} \s/([^\s]+)\.php [NC]
-RewriteRule ^ %1 [R=301,NE,L]
